@@ -1,0 +1,1 @@
+docker run -it --rm --name mysql -p 3306:3306 -e MYSQL_ROOT_PASSWORD=debezium -e MYSQL_USER=mysqluser -e MYSQL_PASSWORD=mysqlpw quay.io/debezium/example-mysql:2.7 --gtid_mode=ON --enforce-gtid-consistency=ON --server_id=1
