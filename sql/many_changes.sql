@@ -1,4 +1,4 @@
-docker exec mysql mysql -umysqluser -pmysqlpw inventory -e 'DELETE FROM CUSTOMERS where id > 1004;'
+docker exec mysql mysql -umysqluser -pmysqlpw inventory -e 'DELETE FROM customers where id > 1004;'
 docker exec mysql mysql -umysqluser -pmysqlpw inventory -e 'INSERT INTO customers VALUES (NULL, "Angela", "Aguilar", "rbean@example.org");'
 docker exec mysql mysql -umysqluser -pmysqlpw inventory -e 'INSERT INTO customers VALUES (NULL, "Ashley", "Weber", "wrightrobert@example.net");'
 docker exec mysql mysql -umysqluser -pmysqlpw inventory -e 'INSERT INTO customers VALUES (NULL, "Amanda", "Martinez", "brett43@example.org");'
