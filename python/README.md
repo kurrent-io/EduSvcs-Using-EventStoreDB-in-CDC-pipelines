@@ -73,7 +73,7 @@ This means that the first read of the consumer will get events for each row of t
 Viewing the stream browser shows those rows, are now read into individual streams as events of type "snapshot"
 <br />
 <br />
-<img src="./resources/First_Snapshot_Stream_Status_annotated.png" alt="my caption" style="width: 500px; border: 2px solid black;"/>
+<img src="./../resources/First_Snapshot_Stream_Status_annotated.png" alt="my caption" style="width: 500px; border: 2px solid black;"/>
 
 <br />
 <br />
@@ -82,7 +82,7 @@ Viewing the stream browser shows those rows, are now read into individual stream
 
 If the projection subsystem is enabled, and projections are running, then you can view the projection streams. In this case changes to row 1 of the customers table will be written to stream customers-row1.  The category projection will split the stream-name on the ```-``` character and put all events to all streams that start with ```customers``` into the ```$category-customers``` stream. There is python code to read from that projection, see ```read_all_events_per_table.py``` in the python directory. 
 
-<img src="./resources/Projections_annotated.png" alt="my caption" style="width: 500px; border: 2px solid black;"/>
+<img src="./../resources/Projections_annotated.png" alt="my caption" style="width: 500px; border: 2px solid black;"/>
 
 <br />
 <br />
@@ -101,7 +101,7 @@ This assumes k_to_es_stream_per_row.py is running, if you stopped it, restart it
 
 The EventStoreDB stream browser will show 5 new streams, one per each row inserted into the customers table.
 
-<img src="./resources/Rows_added_in_transaction_annotated.png" alt="my caption" style="width: 500px; border: 2px solid black;"/>
+<img src="./../resources/Rows_added_in_transaction_annotated.png" alt="my caption" style="width: 500px; border: 2px solid black;"/>
 
 ## Event Type projection
 
@@ -124,7 +124,7 @@ This means that there will be streams/projections created when the first event o
 
 This adds great flexibility to your CDC pipelines by subscribing to or reading the projections based on Event Type, you can view all, inserts, updates, snapshots, and deletes in isolation.
 
-<img src="./resources/Event_Type_projection_annotated.png" alt="my caption" style="width: 500px; border: 2px solid black;"/>
+<img src="./../resources/Event_Type_projection_annotated.png" alt="my caption" style="width: 500px; border: 2px solid black;"/>
 <br />
 <br />
 
@@ -132,7 +132,7 @@ Here is a view of the insert projection at this point.
 
 Note that over time it would include inserts all tables, at this point no other tables have had insert operations.
 
-<img src="./resources/View_of_insert_projection.png" alt="my caption" style="width: 500px; border: 2px solid black;" />
+<img src="./../resources/View_of_insert_projection.png" alt="my caption" style="width: 500px; border: 2px solid black;" />
 
 
 ### Correlation ID projection
@@ -147,9 +147,17 @@ If you look at an event's metadata you can see the ```correlation ID``` you can 
 
 The following images demonstrate the functionality.
 
-<img src="./resources/Correlation_ID_in_metadata.png" alt="my caption" style="width: 500px; border: 2px solid black;"/>
+<img src="./../resources/Correlation_ID_in_metadata.png" alt="my caption" style="width: 500px; border: 2px solid black;"/>
 
 Here is the projection for all changes caused by the transaction. 
 
-<img src="./resources/Transaction_projection_annotated.png" alt="my caption" style="width: 500px; border: 2px solid black;"/>
+<img src="./../resources/Transaction_projection_annotated.png" alt="my caption" style="width: 500px; border: 2px solid black;"/>
+
+### Performing a large number of table changes
+
+There is a sql script, ```many_changes.sql``` that will make many changes to the customers table. Run that script to give enough data to do something interesting with the data in EventStoreDB. 
+
+``` sh many_changes.sgl```
+
+Note if you have stopped the k_to_es_stream_per_row.py program you can restart it, unread messages will persist in kafka long enough for the consumer to pick them up. 
 

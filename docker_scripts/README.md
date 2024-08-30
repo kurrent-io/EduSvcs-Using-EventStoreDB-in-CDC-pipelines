@@ -439,6 +439,6 @@ If that same row, row1, were updated, the stream customers-1 would have an updat
 
 If that row were deleted, the stream customers-1 would have a delete event appended to it.
 
-See the Readme in the top level directou for Stream Design considerations and related Event Store Features.
+See the Readme in the top level directory for Stream Design considerations and related Event Store Features.
 
 --------------

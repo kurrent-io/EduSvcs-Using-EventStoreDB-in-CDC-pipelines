@@ -4,9 +4,19 @@ from json import dumps
 
 ####
 # Sample code to dump a topic to the console
-# Each table is a separate topic
+# In a debezium pipeline changes per table on the source Database
+# become a message in a per table topic
+# Change customer table = message in customer topic
 #####
 
+
+
+#######
+# Create a consumer
+# auto.commit is set to false here !!!!
+# messages will be read, but not removed from topic after reading
+# in most cases you would set this to true
+########
 c = Consumer({
     'bootstrap.servers': 'localhost:9092',
     'group.id': 'testing12345',
@@ -48,7 +58,7 @@ try:
                
 
     
-                print("\nGOT AN EVENT\n")
+                print("\nGOT A MESSAGE\n")
                 print(f"Kafka topic: {msg.topic()}")
                 print(f"key: \n {key}")
                 print(f"value: \n {value}")
