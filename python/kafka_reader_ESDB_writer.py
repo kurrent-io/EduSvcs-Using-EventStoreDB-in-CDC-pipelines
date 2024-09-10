@@ -101,31 +101,43 @@ c = Consumer({
     'enable.auto.commit': 'true' 
 })
 
-# Subscribe to a topic
-c.subscribe(['dbserver1.inventory.customers','dbserver1.inventory.products','dbserver1.inventory.products_on_hand'])
-#c.subscribe(['dbserver1.inventory.customers'])
-#c.subscribe(['dbserver1.inventory.products_on_hand'])
+#####################
+# Subscribe to topics
+# consumer.subscribe accepts a list of topics
+# Debezium create one topic per table
+# this example subscribes to a subset of vailable tables
+#####################
 
-# create a dict to lookup primary key per table/topic
-# This is probably available in the message key and could be
-# automated, doing it manually for this demo
+c.subscribe(['dbserver1.inventory.customers','dbserver1.inventory.products','dbserver1.inventory.products_on_hand'])
+
+
+####################
+# Create Dictionary of table(topic) => Primary Key
+# Knowing the Column(s) that serve as the Primary Key is
+# useful this dictionary enables quick  lookup of Primary Key
+######################
+
 
 pk_lookup = {"dbserver1.inventory.products":"id","dbserver1.inventory.customers":"id","dbserver1.inventory.products_on_hand":"product_id"}
 
 
 
 
-####
+############
 # Define EventStore Client
-###
+# The shell script that is provided starts a docker container
+# with projections enabled and running
+# If you are using your own eventstore, enable and start projections
+#############
 client = EventStoreDBClient(uri="esdb://localhost:2113?tls=false")
 
 
 
 #############
 # Create a function to write to Event Store
-# stream_name will be table_name-rowid
-# event type will be insert/delete/update
+# stream_name will be table_name-rowid 
+# where rowid is the primary key column for that table
+# event type will be insert/delete/update/snapshot
 #############
 
 def stream_appender(events_array, stream_name):
@@ -151,40 +163,56 @@ try:
                 # rebalance and start consuming
             print("Waiting... ctrl-c to stop....")
         elif msg.error():
-            print("ERROR: %s".format(msg.error()))
-        #elif msg.value() is not None:    
+            print("ERROR: %s".format(msg.error()))   
         else:
            # A message has arrived
         
             if(msg.value()):
                 # decode the message, kafka sends bytes
-                #print(msg.topic)
                 key = msg.key().decode('utf-8')
                 value = msg.value().decode('utf-8')
+
                 # extract offset and timestamp
+                # These are stored in EventStoreDB as metadata
                 offset = msg.offset()
                 timestamp = msg.timestamp()
                  
-                #row_id = json.loads(key)['payload']['id']
+                # Extract the row_id
+                # Stream Name will be table_name-row_id
+                # Lookup Primary Key, then extract from json
+                # payload from kafka
                 pk = pk_lookup[msg.topic()]
                 row_id = json.loads(key)['payload'][pk]
-                #Use these as needed
+
+                # Extract table name
+                # and Database_name 
+                # There are actually a number of ways to get thess values
+                # Parsing the json of the decoded message in this example
                 table_id = json.loads(value)['payload']['source']['table']
                 db_id = json.loads(value)['payload']['source']['db']
-                ###
+                
+                
+                # Name the stream
+                # Our convention in this example is
+                # table_name-row_id
+                # This enables use of the category projection
                 stream_name = f"{table_id}-{str(row_id)}"
+
     
+                # Informational output to console
                 print("\nGOT AN EVENT\n")
                 print(msg.topic())
                 print(f"row_id = {row_id}")
-                # Call the event generator function
-                event_generator(key, value, offset, timestamp)
-                # print number of events (usually 1)
                 print(f"number of events: {len(events_list)}")
                 print(f"VALUE is \n {value}")
                 print(f"Key is \n {key}")
+
+                # Call the event generator function
+                event_generator(key, value, offset, timestamp)
+                
                 # append events to Event Store
                 stream_appender(events_list,str(stream_name))
+                
                 # truncate the events list
                 events_list.clear()
 

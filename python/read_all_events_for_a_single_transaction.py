@@ -4,6 +4,8 @@ from esdbclient import EventStoreDBClient, NewEvent, StreamState
 # Enabling $by_correlation_id projections allows 
 # A client to read all the changes caused by a transaction
 #########
+
+# Create a client
 client = EventStoreDBClient(uri="esdb://localhost:2113?tls=false")
 
 
@@ -24,7 +26,7 @@ client = EventStoreDBClient(uri="esdb://localhost:2113?tls=false")
 # View an event, copy the correlationID value from the events metadata
 # and replace "None" with that correlationID
 # it will resemble "0b267379-6678-11ef-b939-0242ac110004:175"
-
+###########
 
 correlationID = "None" # Replace with your correlationID
 stream_name = f"$bc-{correlationID}"

@@ -38,8 +38,7 @@ try:
                 # rebalance and start consuming
             print("Waiting... ctrl-c to stop....")
         elif msg.error():
-            print("ERROR: %s".format(msg.error()))
-        #elif msg.value() is not None:    
+            print("ERROR: %s".format(msg.error()))    
         else:
            # A message has arrived
         
@@ -48,17 +47,10 @@ try:
                 key = msg.key().decode('utf-8')
                 value = msg.value().decode('utf-8')
                 
-                # extract offset and timestamp
-                offset = msg.offset()
-                timestamp = msg.timestamp() 
-                
-               
-                table_id = json.loads(value)['payload']['source']['table']
-                db_id = json.loads(value)['payload']['source']['db']
-               
-
-    
+                # print informational messages to console
                 print("\nGOT A MESSAGE\n")
+                print(f"offset: {msg.offset()}")
+                print(f"timestamp: {msg.timestamp()}")
                 print(f"Kafka topic: {msg.topic()}")
                 print(f"key: \n {key}")
                 print(f"value: \n {value}")
@@ -69,4 +61,4 @@ except KeyboardInterrupt:
 finally:
         # Leave group and commit final offsets
         c.close()
-
+set

@@ -24,5 +24,5 @@ for event in events:
     print(f" \n {event.type}")
     print(event.data)
 
-print("success")
+print("\nsuccess")
 client.close()
