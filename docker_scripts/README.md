@@ -33,9 +33,11 @@ Most steps are required. The exception is the topic watcher, that provides infor
 
 ## 1. Starting Zookeeper
 
-Kafka depends on Zookeeper, so before we start kafka zookeeper needs to be available. 
+Kafka depends on Zookeeper, so before we start kafka zookeeper needs to be available.
 
 Note that recently the zookeeper requirement is no longer needed, and kafka can using raft, called kraft instead of zookeeper. This project has yet to migrate to a kraft enabled kafka.
+
+```sh 01_zookeeper.sh``` should work, read below if you want more information.
 
 ### What is Zookeeper?
 
@@ -119,8 +121,13 @@ If you want to use another version of Zookeeper or another Docker container, you
 
 ## 2. Starting Kafka
 
-You can start Kafka with the following command.
+You can start Kafka in a docker container by running ```sh 02_kafka.sh```
 
+It depends on Zookeeper container, so please run the commands in order. 
+
+The shell script is written for mac OS, you may need to modify, see below.
+
+The command being executed is..
 ```
 docker run -it --rm --name kafka -p 9092:9092 -e ADVERTISED_HOST_NAME=<YOUR_HOSTNAME_OR_IP_ADDRESS> --link zookeeper:zookeeper quay.io/debezium/kafka:2.7
 ```
@@ -129,7 +136,9 @@ Points to note...
 
 Kafka needs to know your laptop's hostname for the Python application to connect to it. The other Docker instances are on the same Docker network due to the —-link setting when the containers are started.  The Python example is not within a docker container, and will require code running on your laptop to connect to kafka. Setting the advertised host name is one way to enable that connection.
 
-The shell script uses the value returned from the command. 
+Without ADVERTISED_HOST_NAME being set, everything except the python code that reads from the kafka topics and writes to Event Store will work.
+
+The shell script uses the value returned from the command.
 ```
 ipconfig getifaddr en0
 ```
@@ -256,7 +265,9 @@ This command is informational only, the docker container provided will run MySQL
 
 ## 5. Start Kafka Connect
 
-The following will start a Kafka Connect instance. Or you can run the shell script, ```sh 05_kafka_connect.sh```
+The following will start a Kafka Connect instance. 
+
+Or you can run the shell script, ```sh 05_kafka_connect.sh```
 
 ```
 docker run -it --rm --name connect -p 8083:8083 -e GROUP_ID=1 -e CONFIG_STORAGE_TOPIC=my_connect_configs -e OFFSET_STORAGE_TOPIC=my_connect_offsets -e STATUS_STORAGE_TOPIC=my_connect_statuses --link kafka:kafka --link mysql:mysql quay.io/debezium/connect:2.7
@@ -386,13 +397,18 @@ Using ********* should make the entry into that wall of text that is displayed i
 
 --------------
 
-## 8. Start Event Store DB
+## 8. Start EventStoreDB
 
-```
-docker run -d --name "$container_name" -it -p 2113:2113 -p 1113:1113 \
-     eventstore/eventstore:lts --insecure --run-projections=All \
-     --enable-external-tcp --enable-atom-pub-over-http;
-```
+Running ```sh 08_start_Event_Store_cluster.sh ``` will start a docker container running EventStoreDB. 
+
+If it is ran a second time, it will stop and remove the previous instance and start a new instance.
+
+```docker run -d --name "$container_name" -e EVENTSTORE_RUN_PROJECTIONS=ALL -it -p 2113:2113 -p 1113:1113 \
+  eventstore/eventstore:latest --insecure --run-projections=All \
+     --enable-external-tcp --enable-atom-pub-over-http --start-standard-projections
+```     
+
+
 
 Note that this starts EventStoreDB and you can verify by pointing a browser at http://localhost:2113
 
