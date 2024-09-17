@@ -1,17 +1,15 @@
-# Change Data Capture (CDC) to Event Store Example using Debezium
+# MySQL to EventStoreDB: Change Data Capture (CDC) example using Debezium
 
 This directory has scripts that will launch docker instances to enable a MySQL to EventStoreDB CDC pipeline.
 
 
 ## How this project is structured
 
-This repo summarizes the steps to deploy a POC of a data path from MySQL or MariaDB to EventStoreDB.
+This repo outlines the steps to deploy a proof of concept for transferring data from MySQL or MariaDB to EventStoreDB.
 
-Docker implementations are used for each required tool.
+Docker implementations are used for each required tool.  You will need Docker installed to run this locally.
 
-To run this locally, you will need Docker installed.
-
-Please note that with containers being launched, it takes a fair amount of computing resources.
+Please note that with multiple containers being launched, it takes a fair amount of computing resources.
 
 With that in mind, here are the steps.
 
@@ -19,13 +17,13 @@ With that in mind, here are the steps.
 2. Start Kafka
 3. Start MySQL
 4. Start MySQL CLI
-5. Start Kafka-Connect
+5. Start Kafka Connect
 6. Deploy connector (get better definition of this)
 7. Deploy a topic watcher
 8. Start EventStoreDB
 9. Run Python code to read from the Kafka topic and write to EventStoreDB
 
-Most steps are required. The exception is the topic watcher, that provides information about how the process is working up to that point.
+Most steps are required. The exception is the topic watcher, which provides information about the process's progress up to that point.
 
 ## Let's get started
 
@@ -33,9 +31,11 @@ Most steps are required. The exception is the topic watcher, that provides infor
 
 ## 1. Starting Zookeeper
 
-Kafka depends on Zookeeper, so before we start kafka zookeeper needs to be available.
+For this example, Kafka remains dependent on Zookeeper. Therefore, Zookeeper needs to be available before we start Kafka.
 
-Note that recently the zookeeper requirement is no longer needed, and kafka can using raft, called kraft instead of zookeeper. This project has yet to migrate to a kraft enabled kafka.
+::: note 
+Apache Kafka Raft (KRaft) was recently introduced to remove Kafka's reliance on Zookeeper for metadata management. This EventStoreDB project has yet to migrate to KRaft-enabled Kafka.
+:::
 
 ```sh 01_zookeeper.sh``` should work, read below if you want more information.
 
@@ -45,26 +45,26 @@ A Zookeeper cluster provides a distributed, consistent, fault-tolerant directory
 
 ### What products use Zookeeper?
 
-The valuable service provided by Zookeeper underpins many projects, with Hadoop and Kafka being the more widely used examples. A project built on top of Zookeeper, called Bookeeper is used by Apache Pulsar.
+Zookeeper provides a valuable service that underpins many projects, with Hadoop and Kafka being the more widely used examples. Apache Pulsar uses a project built on top of Zookeeper, Bookeeper.
 
 ### How does Kafka use Zookeeper?
 
-Kafka uses Zookeeper to track which nodes are available, what topics are being served, etc.
+Kafka uses Zookeeper to store metadata, handle the leadership election of Kafka brokers, track which nodes are available, what topics are being served, and more.
 
-Kafka requires and uses Zookeeper as a core requirement of providing the Kafka service.
+As mentioned earlier, until recently, Zookeeper was a core requirement for providing the Kafka service.
 
 ### Will you need to interact directly with Zookeeper for this demo?
 
 No.
 
-In this example, you don't need to interact directly with Zookeeper, but Kafka requires it, so it is the first service you will need to start.
+In this example, you don't need to interact directly with Zookeeper, but it will be the first service you need to start based on Kafka's reliance on it for this project.
 
-However, in the interest of learning how each part of the system works, the Zookeeper instance is started with some useful settings, enabling 4letterwords, that can be useful if you want to verify a working Zookeeper quorum.
+In the interest of learning how each part of the system works, the Zookeeper instance is started with some useful settings, such as enabling Zookeeper's "four-letter words" commands, that are useful if you want to verify a working Zookeeper quorum.
 
 The start command to start a Docker instance is below. Note the setting 
 
 ``` -e JVMFLAGS="-Dzookeeper.4lw.commands.whitelist=*" ```
-This setting enables 4letterwords.
+This setting enables four-letter words.
 
 You pass ZK "ruok" for "Are You Okay" over telnet, and if Zookeeper is running, it will return "imok" for "I am okay."
 
@@ -76,15 +76,15 @@ docker run -e JVMFLAGS="-Dzookeeper.4lw.commands.whitelist=*" -it --rm --name zo
 
 ### Shell script alternative to cut and paste
 
-Since copying and pasting commands can sometimes lead to accidental introduction of newlines, or other characters, a shell script is provided as part of this repo. Instead of Copy/Paste you can clone this repo locally and run
+Since copying and pasting commands sometimes leads to accidental introduction of newlines, or other characters, a shell script is provided as part of this repo. Instead of Copy/Paste you can clone this repo locally and run the following:
 
 ```sh 01_zookeper.sh```
 
-Note that the Docker container is started in a way that maintains control of the terminal that launched it; this is expected behavior.
+The Docker container is started in a manner that maintains control of the terminal that launched it; this is expected behavior.
 
 ### Ports Required by Zookeeper
 
-Note that this uses ports 2181, 2888, and 3888 and will fail to start if other services are using those ports.
+Zookeeper uses ports 2181, 2888, and 3888 and will fail to start if other services are using those ports.
 
 ### Verifying Zookeeper is running
 
@@ -94,7 +94,7 @@ You can ask Zookeeper, "Are you okay?"
 echo ruok | nc -v localhost 2181 ;echo
 ```
 
-Your response should be "imok".
+The response should be "imok".
 
 ```
 Connection to localhost port 2181 [tcp/eforward] succeeded!
@@ -115,37 +115,37 @@ $ echo conf | nc -v localhost 2181 ;echo
 
 This command works with this version of Zookeeper and the specified Docker container.
 
-If you want to use another version of Zookeeper or another Docker container, you may need to change this "-e JVMFLAGS="-Dzookeeper.4lw.commands.whitelist=*"". This is one way to turn on the 4letter words functionality. You probably do not require 4letter words, but they are used here to validate that Zookeeper is working.
+If you want to use another version of Zookeeper or another Docker container, you may need to change this "-e JVMFLAGS="-Dzookeeper.4lw.commands.whitelist=*"". This is one way to turn on the four-letter words functionality. You probably do not require four-letter words, but they are used here to validate that Zookeeper is working.
 
 --------------
 
 ## 2. Starting Kafka
 
-You can start Kafka in a docker container by running ```sh 02_kafka.sh```
+You can start Kafka in a Docker container by running ```sh 02_kafka.sh```
 
-It depends on Zookeeper container, so please run the commands in order. 
+It is dependent on the Zookeeper container, so please ensure the commands are run in order. 
 
-The shell script is written for mac OS, you may need to modify, see below.
+The shell script is written for macOS, you may need to modify, see below.
 
-The command being executed is..
+The command being executed is:
 ```
 docker run -it --rm --name kafka -p 9092:9092 -e ADVERTISED_HOST_NAME=<YOUR_HOSTNAME_OR_IP_ADDRESS> --link zookeeper:zookeeper quay.io/debezium/kafka:2.7
 ```
 
-Points to note...
+Of note:
 
-Kafka needs to know your laptop's hostname for the Python application to connect to it. The other Docker instances are on the same Docker network due to the —-link setting when the containers are started.  The Python example is not within a docker container, and will require code running on your laptop to connect to kafka. Setting the advertised host name is one way to enable that connection.
+Kafka requires the hostname of your laptop for the Python application to connect to it. The other Docker instances are on the same Docker network because of the --link setting when the containers are started. The Python example is not running in a Docker container and requires code running on your laptop to connect to Kafka. Setting the advertised hostname is one way to enable that connection.
 
-Without ADVERTISED_HOST_NAME being set, everything except the python code that reads from the kafka topics and writes to Event Store will work.
+Without ADVERTISED_HOST_NAME being set, everything except the Python code that reads from the Kafka topics and writes to Event Store will work.
 
 The shell script uses the value returned from the command.
 ```
 ipconfig getifaddr en0
 ```
 
-If that command does not work on your computer, edit either the shell script, or the command to copy and paste so that it includes your IP address.
+If that command does not work on your computer, edit either the shell script or the command to copy and paste to include your IP address.
 
-You can test the command below in a terminal if you have issues.This code works on mac, and probably on linux, windows users will have to edit the command.
+If you encounter any issues, you can test the command in a terminal. This code is compatible with Mac and likely with Linux, but Windows users may need to modify the command.
 
 ```
 echo ADVERTISED_HOST_NAME=$(ipconfig getifaddr en0)
@@ -154,17 +154,17 @@ ADVERTISED_HOST_NAME=192.168.1.14
 
 ### Ports used by Kafka
 
-Note that Kafka uses port 9092 and will fail if that port is not available.
+Kafka uses port 9092 and will fail if that port is not available.
 
 ### Kafka must be able to connect to Zookeeper
 
-The ```--link zookeeper:zookeeper``` allows this container to see the Zookeeper container as if they were on the same network.
+The ```--link zookeeper:zookeeper``` allows the Kafka container to see the Zookeeper container as if they were on the same network.
 
 ### Optional: Verify Kafka has registered with Zookeeper
 
 The Zookeeper container will have an instance of the Zookeeper Command Line Client (zkCli.sh)
 
-If you want to explore and verify that Kafka has found Zookeeper, you can run the following commands.
+If you want to explore and verify that Kafka has found Zookeeper, run the following commands.
 
 #### A. Connect to the instance
 
@@ -181,9 +181,9 @@ If you want to explore and verify that Kafka has found Zookeeper, you can run th
 returns
 ```[1]```
 
-This shows that Kafka is connected and registered with ZK quorum.
+This illustrates that Kafka is connected and registered with ZK quorum.
 
-If you stopped Kafka you would  see the list of broker ids go to 0
+If you stopped Kafka, you would see the list of broker ids go to 0.
 
 ```
 [zk: localhost:2181(CONNECTED) 18] ls /brokers/ids
@@ -192,25 +192,25 @@ If you stopped Kafka you would  see the list of broker ids go to 0
 
 #### D. Get the data for broker node from Zookeeper 
 
-Zookeeper presents information in a directory-like structure, with each node having 0 or more children that can be listed with the ls command. Each node also has content that can be retrieved with a get command. To get the information for the Kafka broker, run this command.
+Zookeeper presents information in a directory-like structure, with each node having 0 or more children.  These can be listed with the ```ls``` command. Each node also has content that can be retrieved with a ```get``` command. To get the information for the Kafka broker, run the following command.
 
 ```get /brokers/ids/1```
 
-Which will return data similar to this...
+Which will return data similar to this:
 
 ```
 {"features":{},"listener_security_protocol_map":{"PLAINTEXT":"PLAINTEXT"},"endpoints":["PLAINTEXT://192.168.1.14:9092"],"jmx_port":-1,"port":9092,"host":"192.168.1.14","version":5,"timestamp":"1724097127252"}
 Same for after the topic is created.
 ```
 
-Later on in this example, a topic will be created that can be viewed in Zookeeper by using:
+Later in this example, a topic will be created that can be viewed in Zookeeper by using:
 ```ls /brokers/topics```
 
 --------------
 
 ## 3. Starting MySQL
 
-Use this command to start MySQL or run the shell script, ```sh 03_mysql.sh```
+Use the following command to start MySQL, or run the shell script, ```sh 03_mysql.sh```
 
 ```
 docker run -it --rm --name mysql -p 3306:3306 -e MYSQL_ROOT_PASSWORD=debezium -e MYSQL_USER=mysqluser -e MYSQL_PASSWORD=mysqlpw quay.io/debezium/example-mysql:2.7 --gtid_mode=ON --enforce-gtid-consistency=ON --server_id=1
@@ -218,36 +218,36 @@ docker run -it --rm --name mysql -p 3306:3306 -e MYSQL_ROOT_PASSWORD=debezium -e
 
 Some notes on the command parameters:
 
-'''-e MYSQL_ROOT_PASSWORD=debezium''' (sets root pass to Debezium)
+'''-e MYSQL_ROOT_PASSWORD=debezium''' sets the root pass to Debezium.
 
-'''-e MYSQL_USER=mysqluser -e MYSQL_PASSWORD=mysqlpw''' (Adds a user and sets password)
+'''-e MYSQL_USER=mysqluser -e MYSQL_PASSWORD=mysqlpw''' adds a user and sets password.
  
-'''--gtid_mode=ON''' (Turns on Global Transaction IDs which help correlate which change(s) can be attributed to which transaction)
+'''--gtid_mode=ON''' turns on Global Transaction IDs to help correlate which change(s) can be attributed to which transaction.
 
-'''--enforce-gtid-consistency=ON''' (enforces the use of GTIDs)
+'''--enforce-gtid-consistency=ON''' enforces the use of GTIDs.
 
-'''--server_id=1''' (sets server id) all participants in replication, and debezium impersonates a replication node, must have unique server-id values. 
+'''--server_id=1''' sets the server id. All participants in replication, and Debezium impersonates a replication node, must have unique server-id values. 
 
 Just a note that the binary log, which is used for replication and is enabled by default, is used by Debezium.
 
 ### Ports required for MySQL
 
-Note that MySQL uses local host port 3306 and will fail to start if another service is using that port.
+MySQL uses local host port 3306 and will fail to start if another service is using that port.
 
 --------------
 
 ## 4. Starting a MySQL CLI
 
-This command will start a MySQL command line session attached to the MySQL server started earlier. This is not technically required by the demo, but can be useful if you want to explore. From this prompt you can switch to the inventory database and run SQL commands against the tables that are part of our CDC pipeline.
+This command will start a MySQL command line session attached to the MySQL server that was started earlier. This is not technically required for this project, but from this prompt, you can switch to the inventory database and run SQL commands against the tables that are part of our CDC pipeline.
 
 ```docker run -it --rm --name mysqlterm --link mysql mysql:8.2 sh -c 'exec mysql -h"$MYSQL_PORT_3306_TCP_ADDR" -P"$MYSQL_PORT_3306_TCP_PORT" -uroot -p"$MYSQL_ENV_MYSQL_ROOT_PASSWORD"'
 ```
 
-Having this available in a terminal is particularly helpful if you do not have a MySQL client installed locally. Note if you do want to connect from the terminal on your laptop to the MySQL in the docker container you will have to specify -h127.0.0.1, otherwise the connection will think the server is local and try the socket, instead of the network port.
+Having this available in a terminal is particularly helpful if you do not have a MySQL client installed locally. If you do want to connect from the terminal on your laptop to the MySQL in the Docker container, you must specify -h127.0.0.1.  Otherwise, the connection will think the server is local and try the socket instead of the network port.
 
 ### Verify that the binlog is enabled
 
-This command is informational only, the docker container provided will run MySQL with the binlog enabled. It is also enabled by default, but it is worth checking, or making it part of your debug routine if things go wrong. 
+This command is informational only, the provided Docker container will run MySQL with the binlog enabled. It is also enabled by default, but it is worth checking or making it part of your debug routine if things go wrong. 
 
  ```select @@GLOBAL.log_bin;```
 
@@ -275,11 +275,11 @@ docker run -it --rm --name connect -p 8083:8083 -e GROUP_ID=1 -e CONFIG_STORAGE_
 
 ### Command details
 
-```--link kafka:kafka --link mysql:mysql``` (allow this instance to see those instances)
+```--link kafka:kafka --link mysql:mysql``` allows this instance to see those instances.
 
 ### Ports required by Kafka
 
-In order to run this docker container port 8083 must be available on the host.
+In order to run this Docker container, port 8083 must be available on the host.
 
 ### Verify Kafka Connect is running
 
@@ -288,7 +288,7 @@ This curl command can be used to verify that Kafka Connect is running.
 
 ```curl localhost:8083/ | jq```
 
-Should return something like...
+This should return something like:
 
 ```
 {
@@ -298,15 +298,15 @@ Should return something like...
 }
 ```
 
-Note that this requires the JSON command line parser tool jq be installed on your computer.
+This requires the JSON command line parser tool 'jq' to be installed on your computer.
 
 If jq is not installed, you can run:
 ```
 curl localhost:8083/
 ```
-The format will be all one string with no new lines, but it will still show that Kafka Connect is functioning.
+The format will be a single string with no new lines, but will still show that Kafka Connect is functioning.
 
-### Verify that the Debezium MySQL connector is available in Kafka Connect
+### Verify the Debezium MySQL connector is available in Kafka Connect
 
 ```curl localhost:8083/connector-plugins | jq```
 
@@ -324,7 +324,7 @@ Look for:
 
 ## 6. Deploy connector
 
-Once again, you can copy this command and paste into a terminal, or you can run the shell script ```sh 06_deploy_connector.sh```
+Once again, you can copy this command and paste in a terminal, or you can run the shell script ```sh 06_deploy_connector.sh```
 
 
 ```
@@ -335,19 +335,19 @@ This command sets up the connector.
 
 ### Settings details
 
-"database.hostname": "mysql" = Connect to the host MySQL (the Docker container that was started in the previous command)
+"database.hostname": "mysql" = Connect to the host MySQL, the Docker container that was started in the previous command.
 
-"database.port": "3306" = Connect to port 3306, the standard MySQL port
+"database.port": "3306" = Connect to port 3306, the standard MySQL port.
 
-"database.user": "debezium" = User to connect to MySQL
+"database.user": "debezium" = User to connect to MySQL.
 
-"database.password": "dbz" = Password for the connection
+"database.password": "dbz" = Password for the connection.
 
-"database.server.id": "184054" = Debezium captures CDC data by identifying itself to MySQL as a MySQL server participating in a replication cluster, and therefore it needs to provide a server id
+"database.server.id": "184054" = Debezium captures CDC data by identifying itself to MySQL as a MySQL server participating in a replication cluster, and therefore it needs to provide a server id.
 
-"topic.prefix": "dbserver1" = Prefix to append to the Kafka topic
+"topic.prefix": "dbserver1" = Prefix to append to the Kafka topic.
 
-"database.include.list": "inventory" = Specifies which database to replicate
+"database.include.list": "inventory" = Specifies which database to replicate.
 
 ### Verify the connection has been configured 
 
@@ -363,7 +363,7 @@ Should return:
 
 This command will display any new data in the Kafka topic to the terminal. 
 
-If, for example, any table in the inventory database is modified, you will see that reflected in this terminal.
+If, for example, any table in the inventory database is modified, it will be reflected in this terminal.
 
 The command is below, or you can run the shell script ```sh 07_topic_watcher.sh```
 
@@ -393,15 +393,15 @@ You should see four rows.
 docker exec mysql mysql -umysqluser -pmysqlpw inventory -e 'insert into customers VALUES (NULL, "*********", "***********", "**************")'
 ```
 
-Using ********* should make the entry into that wall of text that is displayed in the topic watcher termina,  easier to scan to detect the change.
+Using ********* should make the entry into the wall of text displayed in the topic watcher terminal.  This should make it easier to scan and detect the change.
 
 --------------
 
 ## 8. Start EventStoreDB
 
-Running ```sh 08_start_Event_Store_cluster.sh ``` will start a docker container running EventStoreDB. 
+Running ```sh 08_start_Event_Store_cluster.sh ``` will start a Docker container running EventStoreDB. 
 
-If it is ran a second time, it will stop and remove the previous instance and start a new instance.
+If it is run a second time it will stop, remove the previous instance, and start a new instance.
 
 ```docker run -d --name "$container_name" -e EVENTSTORE_RUN_PROJECTIONS=ALL -it -p 2113:2113 -p 1113:1113 \
   eventstore/eventstore:latest --insecure --run-projections=All \
@@ -410,27 +410,27 @@ If it is ran a second time, it will stop and remove the previous instance and st
 
 
 
-Note that this starts EventStoreDB and you can verify by pointing a browser at http://localhost:2113
+This starts EventStoreDB, which can be verified by pointing a browser at http://localhost:2113
 
-Check projections and make sure they are running. 
+Check Projections and make sure they are running. 
 
 --------------
 
 ## Summary up to this point
 
-mysql->binlog->debezium->kafka is now in place. 
+MySQL -> binlog -> Debezium -> Kafka is now in place. 
 
-What is needed is an application that reads the Kafka topic of Change Data Events from MySQL and writes those into EventStoreDB.
+What is needed next is an application that reads the Kafka topic of Change Data Events from MySQL and writes those into EventStoreDB.
 
-Sample code is available in the Python directory. The k_to_es_stream_per_row.py program is the code that reads messages off the kafka topic, and transforms them into events in EventStoreDB.
+Sample code can be found in the Python directory. The k_to_es_stream_per_row.py program code reads messages from the Kafka topic and transforms them into events in EventStoreDB.
 
-A quick summary of the code.
+A quick summary of the code:
 
 1. Create a Kafka consumer
 2. Create an EventStoreDB client
-3. Iterate in a continuously running loop over Kafka output and write to Event Store
+3. Iterate in a continuously running loop over Kafka output and write to EventStoreDB
 
-EventStoreDB manages data as immutable "events" written to an ordered log, where events are aggregated into streams. Events have the following attributes.
+EventStoreDB manages data as immutable "events" written to an ordered log where events are aggregated into relevant, fine-grained streams. Events have the following attributes.
 
 
 * Event Type: 
@@ -439,22 +439,20 @@ In our case, Event Type will be the SQL operation: Create, Update, Delete.
 
 * Data: 
 
-The payload of the Kafka message is the basis for the Event Data. In our case, this will be the key and value received from Debezium through Kafka and written as JSON.
+The Kafka message payload is the basis for the event data. In this case, it will be the key and value received from Debezium through Kafka and written as JSON.
 
-* Event MetaData:
+* Event Metadata:
 
-In our case, metadata will consist of the offset from Kafka, the timestamp, and the transaction ID of the SQL transaction that caused the change. This data is represented using JSON.
+The event metadata will consist of the offset from Kafka, the timestamp, and the transaction ID of the SQL transaction that caused the change. This data is represented using JSON.
 
 * Stream_Name: 
 
-In this example, one stream for each row in the tables will be created and appended to. 
+In this example, one stream will be created and have events appended to it for each row in the tables. 
 
-For example, an insert of row 1 into the table customers would lead to an event of Event Type: insert, into the stream customers-1.
+For example, when row1 is inserted into the 'customers' table, an event of Event Type: insert is created and appended to the customers-1 stream.
 
-If that same row, row1, were updated, the stream customers-1 would have an update event appended to the stream customers-1.
+If that same row, 'row1', was updated, an 'update' event would be appended to the customers-1 stream.  If that row were deleted, the stream customers-1 would have a delete event appended to it.
 
-If that row were deleted, the stream customers-1 would have a delete event appended to it.
-
-See the Readme in the top level directory for Stream Design considerations and related Event Store Features.
+See the Readme in the top level directory for Stream Design considerations and related Event Store features.
 
 --------------
