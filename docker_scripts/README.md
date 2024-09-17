@@ -422,7 +422,7 @@ MySQL -> binlog -> Debezium -> Kafka is now in place.
 
 What is needed next is an application that reads the Kafka topic of Change Data Events from MySQL and writes those into EventStoreDB.
 
-Sample code can be found in the Python directory. The k_to_es_stream_per_row.py program code reads messages from the Kafka topic and transforms them into events in EventStoreDB.
+Sample code can be found in the Python directory. The kafka_reader_ESDB_writer.oy program code reads messages from the Kafka topic and transforms them into events in EventStoreDB.
 
 A quick summary of the code:
 
