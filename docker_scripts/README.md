@@ -33,9 +33,10 @@ Most steps are required. The exception is the topic watcher, which provides info
 
 For this example, Kafka remains dependent on Zookeeper. Therefore, Zookeeper needs to be available before we start Kafka.
 
-::: note 
-Apache Kafka Raft (KRaft) was recently introduced to remove Kafka's reliance on Zookeeper for metadata management. This EventStoreDB project has yet to migrate to KRaft-enabled Kafka.
-:::
+>[!NOTE]
+>Apache Kafka Raft (KRaft) was recently introduced to remove Kafka's reliance on Zookeeper for metadata management. This EventStoreDB project has yet to migrate to KRaft-enabled Kafka.
+
+
 
 ```sh 01_zookeeper.sh``` should work, read below if you want more information.
 
