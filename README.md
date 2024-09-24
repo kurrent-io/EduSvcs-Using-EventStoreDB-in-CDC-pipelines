@@ -22,7 +22,7 @@ This repo provides:
 
 **Additional repo information:**
 
-* The " docker_scripts " folder contains a collection of shell scripts to launch a series of Docker containers to implement the CDC pipeline.
+* Start by reading the " docker_scripts " README.  This folder contains a collection of shell scripts that launch a series of Docker containers to implement the CDC pipeline.
 * The “sql” folder contains example SQL scripts that modify the MySQL database with changes that are picked up by the CDC pipeline 
 * The “python” folder contains:
    1. Python code to read from Kafka topics and write to EventStoreDB
