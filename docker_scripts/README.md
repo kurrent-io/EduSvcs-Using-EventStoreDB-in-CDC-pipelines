@@ -229,7 +229,7 @@ Some notes on the command parameters:
 
 '''--server_id=1''' sets the server id. All participants in replication, and Debezium impersonates a replication node, must have unique server-id values. 
 
-Just a note that the binary log, which is used for replication and is enabled by default, is used by Debezium.
+The binary log, which is used for replication and is enabled by default, is used by Debezium.
 
 ### Ports required for MySQL
 
@@ -240,6 +240,8 @@ MySQL uses local host port 3306 and will fail to start if another service is usi
 ## 4. Starting a MySQL CLI
 
 This command will start a MySQL command line session attached to the MySQL server that was started earlier. This is not technically required for this project, but from this prompt, you can switch to the inventory database and run SQL commands against the tables that are part of our CDC pipeline.
+
+Use the following command to start a MySQL command line session, or run the shell script, ```sh 04_mysql_CLI.sh```
 
 ```
 docker run -it --rm --name mysqlterm --link mysql mysql:8.2 sh -c 'exec mysql -h"$MYSQL_PORT_3306_TCP_ADDR" -P"$MYSQL_PORT_3306_TCP_PORT" -uroot -p"$MYSQL_ENV_MYSQL_ROOT_PASSWORD"'
