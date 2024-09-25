@@ -241,7 +241,8 @@ MySQL uses local host port 3306 and will fail to start if another service is usi
 
 This command will start a MySQL command line session attached to the MySQL server that was started earlier. This is not technically required for this project, but from this prompt, you can switch to the inventory database and run SQL commands against the tables that are part of our CDC pipeline.
 
-```docker run -it --rm --name mysqlterm --link mysql mysql:8.2 sh -c 'exec mysql -h"$MYSQL_PORT_3306_TCP_ADDR" -P"$MYSQL_PORT_3306_TCP_PORT" -uroot -p"$MYSQL_ENV_MYSQL_ROOT_PASSWORD"'
+```
+docker run -it --rm --name mysqlterm --link mysql mysql:8.2 sh -c 'exec mysql -h"$MYSQL_PORT_3306_TCP_ADDR" -P"$MYSQL_PORT_3306_TCP_PORT" -uroot -p"$MYSQL_ENV_MYSQL_ROOT_PASSWORD"'
 ```
 
 Having this available in a terminal is particularly helpful if you do not have a MySQL client installed locally. If you do want to connect from the terminal on your laptop to the MySQL in the Docker container, you must specify -h127.0.0.1.  Otherwise, the connection will think the server is local and try the socket instead of the network port.
