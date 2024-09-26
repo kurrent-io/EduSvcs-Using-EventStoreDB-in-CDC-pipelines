@@ -242,7 +242,7 @@ Use the following command to start a MySQL command line session, or run the shel
 docker run -it --rm --name mysqlterm --link mysql mysql:8.2 sh -c 'exec mysql -h"$MYSQL_PORT_3306_TCP_ADDR" -P"$MYSQL_PORT_3306_TCP_PORT" -uroot -p"$MYSQL_ENV_MYSQL_ROOT_PASSWORD"'
 ```
 
-Having this available in a terminal is particularly helpful if you do not have a MySQL client installed locally. If you do want to connect from the terminal on your laptop to the MySQL in the Docker container, you must specify -h127.0.0.1.  Otherwise, the connection will think the server is local and try the socket instead of the network port.
+Having this available in a terminal is particularly helpful if you do not have a MySQL client installed locally. If you do want to connect from the terminal on your laptop to the MySQL in the Docker container, you must specify -h127.0.0.1 (*replacing ```-h"$MYSQL_PORT_3306_TCP_ADDR"``` in the previous command*).  Otherwise, the connection will think the server is local and try the socket instead of the network port.
 
 ### Verify that the binlog is enabled
 
@@ -272,7 +272,7 @@ docker run -it --rm --name connect -p 8083:8083 -e GROUP_ID=1 -e CONFIG_STORAGE_
 
 ### Command details
 
-```--link kafka:kafka --link mysql:mysql``` allows this instance to see those instances.
+```--link kafka:kafka --link mysql:mysql``` allows this instance to see the Kafka and MySQL instances.
 
 ### Ports required by Kafka
 
